@@ -1,0 +1,10 @@
+spring:
+  messages:
+    basename: "i18n/messages"
+    encoding: "UTF-8"
+
+questions:
+  path: "./questions/questions"
+  threshold: 2
+  locale: ru_RU
+#  locale: en
