@@ -1,16 +1,16 @@
 package ru.otus.readers;
 
 import ru.otus.entities.Question;
+import ru.otus.services.IOService;
 
-import java.io.InputStream;
 import java.util.Scanner;
 
 
 public class AnswerReader<T extends Question> {
     private final Scanner scanner;
 
-    public AnswerReader(InputStream in) {
-        this.scanner = new Scanner(in);
+    public AnswerReader(IOService ioService) {
+        this.scanner = new Scanner(ioService.getIn());
     }
 
     public boolean checkAnswer(T question) {
