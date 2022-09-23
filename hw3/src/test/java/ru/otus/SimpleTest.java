@@ -3,6 +3,7 @@ package ru.otus;
 import org.junit.Test;
 import ru.otus.entities.Question;
 import ru.otus.readers.AnswerReader;
+import ru.otus.services.IOService;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -24,12 +25,13 @@ public class SimpleTest {
         question.setQuestion("Первый вариант ответа правильный.");
         question.setAnsPosition(1);
         question.setOptions(Arrays.asList("Первый", "Второй"));
-        AnswerReader<Question> answerReader = new AnswerReader<>(new ByteArrayInputStream("""
+        IOService ioService = new IOService(new ByteArrayInputStream("""
                 1\r
                 2\r
                 пеРвЫй\r
                 ВТОрой\r
-                """.getBytes(StandardCharsets.UTF_8)));
+                """.getBytes(StandardCharsets.UTF_8)), null);
+        AnswerReader<Question> answerReader = new AnswerReader<>(ioService);
         assertTrue(answerReader.checkAnswer(question));
         assertFalse(answerReader.checkAnswer(question));
         assertTrue(answerReader.checkAnswer(question));
