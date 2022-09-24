@@ -13,6 +13,7 @@ import ru.otus.displayers.QuestionDisplayerImpl;
 import ru.otus.entities.Question;
 import ru.otus.readers.CsvQuestionReader;
 import ru.otus.readers.QuestionParser;
+import ru.otus.services.IOService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -70,7 +71,8 @@ public class TestQuestionParse {
     public void checkDisplay() throws UnsupportedEncodingException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         String utf = StandardCharsets.UTF_8.name();
-        QuestionDisplayerImpl<Question> questionDisplayer = new QuestionDisplayerImpl<>(new PrintStream(byteArrayOutputStream, true, utf), source, appProps);
+        IOService ioService = new IOService(null, new PrintStream(byteArrayOutputStream, true, utf));
+        QuestionDisplayerImpl<Question> questionDisplayer = new QuestionDisplayerImpl<>(ioService, source, appProps);
         Question question = new Question();
         question.setQuestion("Повар спрашивает повара: какова твоя профессия?");
         question.setOptions(Arrays.asList("Милиционер", "Врач", "Повар"));

@@ -10,7 +10,6 @@ import ru.otus.entities.Question;
 import ru.otus.readers.AnswerReader;
 import ru.otus.readers.QuestionReader;
 
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,18 +23,21 @@ public class ExamConsoleService<T extends Question> implements ExamService, Comm
     private final MessageSource messageSource;
     private final AppProps appProps;
     private final QuestionReader<T> reader;
+    private final IOService ioService;
 
-    public ExamConsoleService(QuestionReader<T> reader, AppProps appProps, MessageSource msgSource) {
+
+    public ExamConsoleService(QuestionReader<T> reader, IOService ioService, AppProps appProps, MessageSource msgSource) {
         this.reader = reader;
         this.appProps = appProps;
         messageSource = msgSource;
+        this.ioService = ioService;
     }
 
     @Override
-    public void startExam(InputStream in, PrintStream out) {
+    public void startExam() {
         try {
-            var answerReader = new AnswerReader<T>(in);
-            var questionDisplayer = new QuestionDisplayerImpl<T>(out, messageSource, appProps);
+            var answerReader = new AnswerReader<T>(ioService);
+            var questionDisplayer = new QuestionDisplayerImpl<T>(ioService, messageSource, appProps);
             List<T> questions = reader.getQuestions();
             AtomicInteger rightCount = new AtomicInteger();
             IntStream.range(0, questions.size()).forEach(idx -> {
@@ -44,14 +46,18 @@ public class ExamConsoleService<T extends Question> implements ExamService, Comm
                 getResult(answerReader, rightCount, question);
             });
 
-            out.println(messageSource.getMessage("result.end", null, appProps.locale()));
-            if (rightCount.get() >= appProps.threshold()) {
-                out.println(messageSource.getMessage("result.right", new String[]{String.valueOf(rightCount.get())}, appProps.locale()));
-            } else {
-                out.println(messageSource.getMessage("result.false", null, appProps.locale()));
-            }
+            showResultText(rightCount, ioService.getOut());
         } catch (Exception e) {
-            out.println(e.getMessage());
+            ioService.getOut().println(e.getMessage());
+        }
+    }
+
+    private void showResultText(AtomicInteger rightCount, PrintStream out) {
+        out.println(messageSource.getMessage("result.end", null, appProps.locale()));
+        if (rightCount.get() >= appProps.threshold()) {
+            out.println(messageSource.getMessage("result.right", new String[]{String.valueOf(rightCount.get())}, appProps.locale()));
+        } else {
+            out.println(messageSource.getMessage("result.false", null, appProps.locale()));
         }
     }
 
@@ -67,6 +73,6 @@ public class ExamConsoleService<T extends Question> implements ExamService, Comm
 
     @Override
     public void run(String... args) throws Exception {
-        startExam(System.in, System.out);
+        startExam();
     }
 }
