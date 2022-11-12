@@ -2,6 +2,7 @@ package ru.otus.dao;
 
 import lombok.val;
 import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -23,12 +24,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestBookRepo {
 
     private static final int EXPECTED_NUMBER_OF_BOOKS = 2;
-    private static final int EXPECTED_QUERIES_COUNT = 2;
+    private static final int EXPECTED_QUERIES_COUNT_FOR_GENRE = 1;
     @Autowired
     private BookRepoJpa bookRepoJpa;
 
     @Autowired
     private TestEntityManager em;
+
+    @AfterEach
+    void tearDown() {
+        SessionFactory unwrap = em.getEntityManager().getEntityManagerFactory().unwrap(SessionFactory.class);
+        unwrap.getStatistics().clear();
+    }
 
     @Test
     void testFindOneBook() {
@@ -61,17 +68,13 @@ public class TestBookRepo {
         SessionFactory sessionFactory = em.getEntityManager().getEntityManagerFactory()
                 .unwrap(SessionFactory.class);
         sessionFactory.getStatistics().setStatisticsEnabled(true);
-
-
         System.out.println("\n\n\n\n----------------------------------------------------------------------------------------------------------");
         val books = bookRepoJpa.getAll();
         assertThat(books).isNotNull().hasSize(EXPECTED_NUMBER_OF_BOOKS)
                 .allMatch(s -> !s.getName().equals(""))
-                .allMatch(s -> s.getComments() != null && s.getComments().size() > 0)
-                .allMatch(s -> s.getGenre() != null)
-                .allMatch(s -> s.getAuthors() != null && s.getAuthors().size() > 0);
+                .allMatch(s -> s.getGenre() != null);
         System.out.println("----------------------------------------------------------------------------------------------------------\n\n\n\n");
-        assertThat(sessionFactory.getStatistics().getPrepareStatementCount()).isEqualTo(EXPECTED_QUERIES_COUNT);
+        assertThat(sessionFactory.getStatistics().getPrepareStatementCount()).isEqualTo(EXPECTED_QUERIES_COUNT_FOR_GENRE);
     }
 
     @Test

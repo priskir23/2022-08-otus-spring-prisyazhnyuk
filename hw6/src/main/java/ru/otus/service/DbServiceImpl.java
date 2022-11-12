@@ -11,7 +11,10 @@ import ru.otus.repo.BookRepository;
 import ru.otus.repo.CommentRepository;
 import ru.otus.repo.GenreRepository;
 
+import javax.transaction.Transactional;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -22,105 +25,106 @@ public class DbServiceImpl implements DbService {
     private BookRepository bookRepoJpa;
     private GenreRepository genreRepoJpa;
     private CommentRepository commentRepoJpa;
-    private Displayer displayerImpl;
 
+    @Transactional
     @Override
-    public void addBook(String bookName, Long bookId, Long genreId, Set<Long> authorsId) {
-        if (bookName == null || bookName.isEmpty()) {
-            displayerImpl.displayMessage("insert name for the book");
-        } else {
-            Book.BookBuilder bookBuilder = Book.builder()
-                    .name(bookName)
-                    .id(bookId);
+    public Book addBook(String bookName, Long bookId, Long genreId, Set<Long> authorsId) {
+        Book.BookBuilder bookBuilder = Book.builder()
+                .name(bookName)
+                .id(bookId);
 
-            if (genreId != null) {
-                Genre genre = genreRepoJpa.getById(genreId);
-                bookBuilder = bookBuilder.genre(genre);
-            }
-            if (authorsId != null && !authorsId.isEmpty()) {
-                Set<Author> authors = authorRepoJpa.getByIds(authorsId);
-                bookBuilder = bookBuilder.authors(authors);
-            }
-            Book inserted = bookRepoJpa.save(bookBuilder.build());
-            displayerImpl.displayMessage("The book " + inserted + " has been added");
+        if (genreId != null) {
+            Genre genre = genreRepoJpa.getById(genreId);
+            bookBuilder = bookBuilder.genre(genre);
         }
+        if (authorsId != null && !authorsId.isEmpty()) {
+            Set<Author> authors = authorRepoJpa.getByIds(authorsId);
+            bookBuilder = bookBuilder.authors(authors);
+        }
+        return bookRepoJpa.save(bookBuilder.build());
     }
 
     @Override
-    public void showEntities(boolean showBook, boolean showAuthor, boolean showGenre) {
+    public Map<String, List<?>> showEntities(boolean showBook, boolean showAuthor, boolean showGenre) {
+        Map<String, List<?>> map = new HashMap<>();
         if (showBook) {
-            displayerImpl.displayEntities(bookRepoJpa.getAll(), "book");
+            map.put("book", bookRepoJpa.getAll());
         }
         if (showAuthor) {
-            displayerImpl.displayEntities(authorRepoJpa.getAll(), "author");
+            map.put("author", authorRepoJpa.getAll());
         }
         if (showGenre) {
-            displayerImpl.displayEntities(genreRepoJpa.getAll(), "genre");
+            map.put("genre", genreRepoJpa.getAll());
         }
+        return map;
     }
 
+    @Transactional
     @Override
-    public void updateBook(String bookName, Long bookId, Long genreId, Set<Long> authorsId) {
-        //апдейт только по id
-        if (bookId == null) {
-            displayerImpl.displayMessage("insert id of the book");
-        } else {
-            Book book = bookRepoJpa.getById(bookId);
-            book.setName(bookName);
+    public Book updateBook(String bookName, Long bookId, Long genreId, Set<Long> authorsId) {
+        Book book = bookRepoJpa.getById(bookId);
+        book.setName(bookName);
 
-            if (genreId != null) {
-                Genre genre = genreRepoJpa.getById(genreId);
-                book.setGenre(genre);
-            }
-            if (authorsId != null && !authorsId.isEmpty()) {
-                Set<Author> authors = authorRepoJpa.getByIds(authorsId);
-                book.setAuthors(authors);
-            }
-            bookRepoJpa.save(book);
-            displayerImpl.displayMessage("The book with id = " + bookId + " has been updated");
+        if (genreId != null) {
+            Genre genre = genreRepoJpa.getById(genreId);
+            book.setGenre(genre);
         }
+        if (authorsId != null && !authorsId.isEmpty()) {
+            Set<Author> authors = authorRepoJpa.getByIds(authorsId);
+            book.setAuthors(authors);
+        }
+        return bookRepoJpa.save(book);
     }
 
+    @Transactional
     @Override
     public void deleteEntity(List<Long> bookIds, List<Long> authorIds, List<Long> genreIds, List<Long> comments) {
-        if (genreIds != null) {
-            genreIds.forEach(it -> {
-                genreRepoJpa.deleteById(it);
-            });
-        }
-        if (authorIds != null) {
-            authorIds.forEach(it -> {
-                authorRepoJpa.deleteById(it);
-            });
-        }
-        if (comments != null) {
-            comments.forEach(it -> {
-                commentRepoJpa.deleteById(it);
-            });
-        }
-        if (bookIds != null) {
-            bookIds.forEach(it -> {
-                bookRepoJpa.deleteById(it);
-            });
-        }
-        displayerImpl.displayMessage("entities have been deleted");
+        genreIds.forEach(it -> {
+            genreRepoJpa.deleteById(it);
+        });
+        authorIds.forEach(it -> {
+            authorRepoJpa.deleteById(it);
+        });
+        comments.forEach(it -> {
+            commentRepoJpa.deleteById(it);
+        });
+        bookIds.forEach(it -> {
+            bookRepoJpa.deleteById(it);
+        });
     }
 
+    @Transactional
     @Override
-    public void addComment(Long bookId, String comment) {
-        if (bookId != null && bookId != 0L) {
-            if (comment.isBlank()) {
-                displayerImpl.displayMessage("book comment is empty!");
-            } else {
-                BookComment bookComment = commentRepoJpa.save(BookComment.builder().comment(comment).build());
-                Book book = bookRepoJpa.getById(bookId);
-//                BookComment bookComment = new BookComment();
-                bookComment.setComment(comment);
-                book.getComments().add(bookComment);
-                bookRepoJpa.save(book);
-            }
-        } else {
-            displayerImpl.displayMessage("insert book id to add comment!");
+    public BookComment addComment(Long bookId, String comment) {
+        BookComment bookComment = commentRepoJpa.save(BookComment.builder().comment(comment).build());
+        Book book = bookRepoJpa.getById(bookId);
+        bookComment.setComment(comment);
+        book.getComments().add(bookComment);
+        bookRepoJpa.save(book);
+        return bookComment;
+    }
+
+    @Transactional
+    @Override
+    public List<BookComment> getComments(Long bookId) {
+        Book book = bookRepoJpa.getById(bookId);
+        if (book == null) {
+            return null;
         }
+        //для подгрузки комментов в рамках транзакции
+        book.getComments().size();
+        return book.getComments();
+    }
+
+    @Transactional
+    @Override
+    public Set<Author> getAuthors(Long bookId) {
+        Book book = bookRepoJpa.getById(bookId);
+        if (book == null) {
+            return null;
+        }
+        //для подгрузки авторов в рамках транзакции
+        book.getAuthors().size();
+        return book.getAuthors();
     }
 }
