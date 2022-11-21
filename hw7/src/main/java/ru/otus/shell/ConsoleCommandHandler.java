@@ -10,9 +10,11 @@ import ru.otus.entities.BookComment;
 import ru.otus.service.DbService;
 import ru.otus.service.Displayer;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @ShellComponent
 @AllArgsConstructor
@@ -38,13 +40,17 @@ public class ConsoleCommandHandler {
     public void showAll(@ShellOption(arity = 1, value = {"-b", "--book"}, defaultValue = "false") boolean showBook,
                         @ShellOption(arity = 1, value = {"-a", "--author"}, defaultValue = "false") boolean showAuthor,
                         @ShellOption(arity = 1, value = {"-g", "--genre"}, defaultValue = "false") boolean showGenre) {
-        Map<String, List<?>> entityNameToListMap = dbService.showEntities(showBook, showAuthor, showGenre);
-        if (entityNameToListMap == null || entityNameToListMap.isEmpty()) {
+        if (showAuthor) {
+            displayerImpl.displayEntities(dbService.getAllAuthors(), "author");
+        }
+        if (showBook) {
+            displayerImpl.displayEntities(dbService.getAllBooks(), "book");
+        }
+        if (showGenre) {
+            displayerImpl.displayEntities(dbService.getAllGenres(), "genre");
+        }
+        if (Stream.of(showBook, showAuthor, showGenre).noneMatch(Boolean.TRUE::equals)) {
             displayerImpl.displayMessage("there is no entity to show");
-        } else {
-            entityNameToListMap.forEach((key, value) -> {
-                displayerImpl.displayEntities(value, key);
-            });
         }
     }
 
@@ -68,7 +74,7 @@ public class ConsoleCommandHandler {
             displayerImpl.displayMessage("insert bookId");
             return;
         }
-        Set<Author> authors = dbService.getAuthors(bookId);
+        Set<Author> authors = dbService.getAuthorsById(bookId);
         displayerImpl.displayEntities(authors.stream().toList(), "authors");
     }
 

@@ -9,16 +9,7 @@ import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    @Override
-    <S extends Book> S save(S entity);
-
-    @Override
-    Optional<Book> findById(Long aLong);
-
     @Query("select s from Book s join fetch s.genre")
     @Override
     List<Book> findAll();
-
-    @Override
-    void deleteById(Long aLong);
 }

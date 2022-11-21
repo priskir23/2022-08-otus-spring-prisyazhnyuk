@@ -2,6 +2,7 @@ package ru.otus.service;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.otus.entities.Author;
 import ru.otus.entities.Book;
 import ru.otus.entities.BookComment;
@@ -11,7 +12,6 @@ import ru.otus.repo.BookRepository;
 import ru.otus.repo.CommentRepository;
 import ru.otus.repo.GenreRepository;
 
-import javax.transaction.Transactional;
 import java.util.*;
 
 @Service
@@ -43,22 +43,6 @@ public class DbServiceImpl implements DbService {
         return bookRepoJpa.save(bookBuilder.build());
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    @Override
-    public Map<String, List<?>> showEntities(boolean showBook, boolean showAuthor, boolean showGenre) {
-        Map<String, List<?>> map = new HashMap<>();
-        if (showBook) {
-            map.put("book", bookRepoJpa.findAll());
-        }
-        if (showAuthor) {
-            map.put("author", authorRepoJpa.findAll());
-        }
-        if (showGenre) {
-            map.put("genre", genreRepoJpa.findAll());
-        }
-        return map;
-    }
-
     @Transactional
     @Override
     public Book updateBook(String bookName, Long bookId, Long genreId, Set<Long> authorsId) {
@@ -79,7 +63,6 @@ public class DbServiceImpl implements DbService {
         return null;
     }
 
-    @Transactional
     @Override
     public void deleteEntity(List<Long> bookIds, List<Long> authorIds, List<Long> genreIds, List<Long> comments) {
         genreIds.forEach(it -> {
@@ -111,7 +94,8 @@ public class DbServiceImpl implements DbService {
         return null;
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+
+    @Transactional(readOnly = true)
     @Override
     public List<BookComment> getComments(Long bookId) {
         Optional<Book> bookOptional = bookRepoJpa.findById(bookId);
@@ -124,9 +108,9 @@ public class DbServiceImpl implements DbService {
         return null;
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     @Override
-    public Set<Author> getAuthors(Long bookId) {
+    public Set<Author> getAuthorsById(Long bookId) {
         Optional<Book> bookOptional = bookRepoJpa.findById(bookId);
         if (bookOptional.isPresent()) {
             Book book = bookOptional.get();
@@ -135,5 +119,21 @@ public class DbServiceImpl implements DbService {
             return book.getAuthors();
         }
         return null;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<Book> getAllBooks() {
+        return bookRepoJpa.findAll();
+    }
+
+    @Override
+    public List<Genre> getAllGenres() {
+        return genreRepoJpa.findAll();
+    }
+
+    @Override
+    public List<Author> getAllAuthors() {
+        return authorRepoJpa.findAll();
     }
 }
