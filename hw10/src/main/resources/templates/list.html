@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
     <meta charset="UTF-8"/>
     <title>List of books</title>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script type="text/javascript" charset="utf8"
+            src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.css">
 </head>
 <body>
@@ -48,13 +50,18 @@
 </div>
 
 <script>
-    var book = null;
+    const Book = {
+        name: null,
+        genre: null,
+        authors: null
+    };
+    var initialBook = null;
     var allGenres = null;
     var allAuthors = null;
     $(document).ready(function() {
         var table = $('#bookTable').DataTable( {
             ajax: {
-                url: '/book',
+                url: '/books',
                 dataSrc: '',
             },
             columns: [
@@ -79,17 +86,17 @@
             var selectedAuthorsPositions = $('#authorSelector').val();
             var selectedGenrePosition = $('#genreSelector').val();
 
-            book.genre = allGenres[parseInt(selectedGenrePosition)];
-            book.authors = new Array();
+            initialBook.genre = allGenres[parseInt(selectedGenrePosition)];
+            initialBook.authors = new Array();
             $.each(selectedAuthorsPositions, function (idx, a) {
-                book.authors.push(allAuthors[parseInt(a)]);
+                initialBook.authors.push(allAuthors[parseInt(a)]);
             });
-            book.name = $(".modal-body #book-name").val();
+            initialBook.name = $(".modal-body #book-name").val();
             $.ajax({
                 url: '/book',
                 method: isCreate ? 'POST' : 'PUT',
                 contentType: "application/json; charset=utf-8",
-                data: JSON.stringify(book),
+                data: JSON.stringify(initialBook),
                 success: function(response) {
                     $('#exampleModal').modal('toggle');
                     table.ajax.reload();
@@ -98,79 +105,25 @@
         });
 <!--        create-->
          $('#newBook').click( function () {
-                    $.ajax({
-                        url: '/newBook',
-                        method: 'GET',
-                        success: function(response) {
-                            book = response.book;
-                            $(".modal-body #book-name").val("");
-                            $("#genreSelector").empty();
-                            $("#authorSelector").empty();
-                            allAuthors = response.authors;
-                            allGenres = response.genres;
-                            $.each(response.genres, function(position, genre) {
-                                $('#genreSelector').append($('<option>', {
-                                    value: position,
-                                    text: genre.name
-                                }));
-                            });
-                            $.each(response.authors, function(position, author) {
-                                $('#authorSelector').append($('<option>', {
-                                    value: position,
-                                    text: author.name
-                                }));
-                            });
-                            isCreate = true;
-                            $('#exampleModal').modal('show');
-                        }
-                     });
+                    getAllGenres(null);
+                    getAllAuthors(null);
+                    initialBook = Object.create(Book);
+                    $(".modal-body #book-name").val("");
+                    isCreate = true;
+                    $('#exampleModal').modal('show');
                 });
 <!--        edit-->
         $('#bookTable tbody').on('click', '#edit', function () {
             var row = $(this).closest('tr');
             var rowData = table.row( row ).data();
-
             $.ajax({
                 url: '/book/' + rowData.id,
                 method: 'GET',
                 success: function(response) {
-                    console.log(response);
-                    book = response.book;
-                    $(".modal-body #book-name").val( book.name );
-                    $("#genreSelector").empty();
-                    $("#authorSelector").empty();
-                    allAuthors = response.authors;
-                    allGenres = response.genres;
-                    $.each(response.genres, function(position, genre) {
-                                if (genre.id === book.genre.id) {
-                                    $('#genreSelector').append($('<option>', {
-                                        value: position,
-                                        text: genre.name,
-                                        selected: true
-                                    }));
-                                } else {
-                                    $('#genreSelector').append($('<option>', {
-                                        value: position,
-                                        text: genre.name
-                                    }));
-                                }
-                    });
-                    var authorIds = book.authors.map(a => (a.id))
-                    $.each(response.authors, function(position, author) {
-                                if (authorIds.includes(author.id)) {
-                                    $('#authorSelector').append($('<option>', {
-                                        value: position,
-                                        text: author.name,
-                                        selected: true
-                                    }));
-                                } else {
-                                    $('#authorSelector').append($('<option>', {
-                                        value: position,
-                                        text: author.name
-                                    }));
-                                }
-
-                    });
+                    initialBook = response.book;
+                    $(".modal-body #book-name").val( initialBook.name );
+                    getAllGenres(initialBook);
+                    getAllAuthors(initialBook);
                     isCreate = false;
                     $('#exampleModal').modal('show');
                 }
@@ -180,7 +133,6 @@
         $('#bookTable tbody').on('click', '#delete', function () {
             var row = $(this).closest('tr');
             var data = table.row( row ).data();
-
             $.ajax({
                 url: '/book/' + data.id,
                 method: 'DELETE',
@@ -190,6 +142,61 @@
              });
         });
     });
+
+    function getAllGenres (book) {
+        $.ajax({
+            url: '/genres',
+            method: 'GET',
+            success: function(response) {
+                $("#genreSelector").empty();
+                allGenres = response.genres;
+                $.each(response.genres, function(position, genre) {
+                    if (book != null && book.genre.id === genre.id) {
+                       $('#genreSelector').append($('<option>', {
+                        value: position,
+                        text: genre.name,
+                        selected: true
+                       }));
+                    } else {
+                        $('#genreSelector').append($('<option>', {
+                            value: position,
+                            text: genre.name
+                        }));
+                    }
+                });
+            }
+        });
+    }
+    function getAllAuthors (book) {
+        $.ajax({
+            url: '/authors',
+            method: 'GET',
+            success: function(response) {
+                $("#authorSelector").empty();
+                allAuthors = response.authors;
+                var authorIds = [];
+                if (book != null) {
+                    authorIds = initialBook.authors.map(a => (a.id));
+                }
+                $.each(response.authors, function(position, author) {
+                    if (authorIds.includes(author.id)) {
+                        $('#authorSelector').append($('<option>', {
+                            value: position,
+                            text: author.name,
+                            selected: true
+                        }));
+                    } else {
+                        $('#authorSelector').append($('<option>', {
+                                value: position,
+                                text: author.name
+                        }));
+                    }
+                });
+            }
+        });
+    }
+
+
 </script>
 </body>
 </html>

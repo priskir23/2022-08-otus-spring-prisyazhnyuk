@@ -13,6 +13,7 @@ import ru.otus.repo.GenreRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -22,7 +23,7 @@ public class BookController {
     private final AuthorRepository authorRepository;
     private final GenreRepository genreRepository;
 
-    @GetMapping("/book")
+    @GetMapping("/books")
     public List<BookDto> listPage() {
         List<Book> allBooks = bookRepository.findAll();
         return allBooks.stream()
@@ -30,14 +31,14 @@ public class BookController {
                 .collect(Collectors.toList());
     }
 
+    @GetMapping(path = "/authors", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> getAllAuthors() {
+        return ResponseEntity.ok(Map.of("authors", authorRepository.findAll()));
+    }
 
-    @GetMapping(path = "/newBook", produces= MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> createBook() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("authors", authorRepository.findAll());
-        map.put("genres", genreRepository.findAll());
-        map.put("book", new BookDto());
-        return ResponseEntity.ok(map);
+    @GetMapping(path = "/genres", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> getAllGenres() {
+        return ResponseEntity.ok(Map.of("genres", genreRepository.findAll()));
     }
 
     @PostMapping("/book")
@@ -55,13 +56,13 @@ public class BookController {
     }
 
     @GetMapping("/book/{id}")
-    public ResponseEntity<Map<String, Object>> getAllInfoToEditBook(@PathVariable long id) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("authors", authorRepository.findAll());
-        map.put("genres", genreRepository.findAll());
-        Book byId = bookRepository.findById(id).orElseThrow();
-        map.put("book", BookDto.toDto(byId));
-        return ResponseEntity.ok(map);
+    public ResponseEntity<?> getAllInfoToEditBook(@PathVariable long id) {
+        Optional<Book> byId = bookRepository.findById(id);
+        if (byId.isPresent()) {
+            return ResponseEntity.ok(Map.of("book", BookDto.toDto(byId.get())));
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping("/book/{id}")

@@ -60,9 +60,51 @@ public class BookControllerTest {
 
 
         List<BookDto> dtos = books.stream().map(BookDto::toDto).toList();
-        mvc.perform(get("/book"))
+        mvc.perform(get("/books"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(mapper.writeValueAsString(dtos)));
+    }
+
+    @Test
+    void getAllAuthors() throws Exception {
+        List<Author> authors = List.of(new Author(1L, "Author1"), new Author(2L, "Author2"));
+        given(authorRepository.findAll()).willReturn(authors);
+
+        StringWriter writer = new StringWriter();
+        JsonGenerator gen = new JsonFactory().createGenerator(writer);
+        gen.setCodec(new ObjectMapper());
+
+        gen.writeStartObject();
+
+        gen.writeObjectField("authors", authors);
+
+        gen.writeEndObject();
+        gen.flush();
+
+        mvc.perform(get("/authors"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(writer.toString()));
+    }
+
+    @Test
+    void getAllGenres() throws Exception {
+        List<Genre> genres = List.of(new Genre(1L, "Sci-fi"), new Genre(2L, "Pulp fiction"));
+        given(genreRepository.findAll()).willReturn(genres);
+
+        StringWriter writer = new StringWriter();
+        JsonGenerator gen = new JsonFactory().createGenerator(writer);
+        gen.setCodec(new ObjectMapper());
+
+        gen.writeStartObject();
+
+        gen.writeObjectField("genres", genres);
+
+        gen.writeEndObject();
+        gen.flush();
+
+        mvc.perform(get("/genres"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(writer.toString()));
     }
 
     @Test
@@ -95,13 +137,6 @@ public class BookControllerTest {
         JsonGenerator gen = new JsonFactory().createGenerator(writer);
         gen.setCodec(new ObjectMapper());
         gen.writeStartObject();
-        gen.writeArrayFieldStart("genres");
-        gen.writeObject(genre);
-        gen.writeEndArray();
-        gen.writeArrayFieldStart("authors");
-        gen.writeObject(author);
-        gen.writeEndArray();
-
         gen.writeObjectField("book", BookDto.toDto(book101));
         gen.writeEndObject();
         gen.flush();
