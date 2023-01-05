@@ -18,9 +18,6 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .authorizeRequests((authz) -> authz
-                        .antMatchers("/").anonymous()
-                )
-                .authorizeRequests((authz) -> authz
                         .antMatchers("/edit").authenticated()
                 )
                 .formLogin()
